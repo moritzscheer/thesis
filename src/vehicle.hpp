@@ -1,25 +1,22 @@
 
 #pragma once
 
-#include "model.cpp"
-#include <queue>
+#include "model.hpp"
 
-struct Measurement
+enum charging_state
 {
-    double soc;
-    double power;
-    int64_t timestemp;
-
-    double soc_prediction;
-    int64_t time_prediction;
+    START,
+    CHARGING,
+    END,
 };
 
-class Vehicle : Model
+struct Vehicle : Model
 {
   private:
     FILE *file;
 
-    int vehicle_number;
+  public:
+    int uid;
 
     double soc_current;
 
@@ -27,14 +24,13 @@ class Vehicle : Model
 
     long timestemp;
 
-    std::queue<Measurement> next;
+    charging_state state;
 
-  public:
-    Vehicle(vector<double> weights);
+    Vehicle(int64_t uid, Model *model);
 
-    bool update_measurements();
+    double predict_soc(double time_delta) const;
 
-    double simulate_soc();
+    double predict_time(double next_soc) const;
 
-    double simulate_power();
+    double error_rate(double prediction);
 };

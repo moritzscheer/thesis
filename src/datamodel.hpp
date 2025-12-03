@@ -2,29 +2,37 @@
 #pragma once
 
 #include <cstdint>
-#include <list>
+#include <unordered_map>
 
+#include "model.hpp"
+#include "training.hpp"
 #include "vehicle.hpp"
 
-static mt19937 rng;
-
-class Datamodel
+class DataModel
 {
   private:
-    FILE *file;
-
     Model *global;
 
-    list<Vehicle> active;
+    std::vector<RawData> measurements;
+
+    size_t current_measurement;
+
+    std::unordered_map<int64_t, Vehicle *> active;
 
   public:
-    Datamodel(const char *model, const char *training);
+    DataModel(int argc, char *argv[]);
 
-    int load(const char *path);
+    ~DataModel();
 
-    int write(const char *path, Measurement data);
+    Vehicle *wait_measurement();
 
-    Vehicle *get_random_event();
+    double get_next_prediction_time(int64_t uid);
 
-    inline int64_t get_timestemp();
+    double get_next_prediction_soc(int64_t uid);
+
+    Vehicle *get_vehicle(int64_t uid);
+
+    void add_vehicle(Vehicle *vehicle);
+
+    std::string timestemp();
 };

@@ -4,6 +4,7 @@
 #include <cmath>
 #include <cstdio>
 #include <cstdlib>
+#include <string>
 #include <vector>
 
 #include <cmath>
@@ -14,32 +15,35 @@ struct Model
 {
     /* Number of the input vector */
 
-    int FEATURES;
+    int features;
 
     /* Base frequency for Fourier Features */
 
-    double FREQUENCY;
+    double frequency;
 
     /* Number of Fourier Features per input */
 
-    int NUM_FREQUENCY;
+    int num_frequency;
 
     /* Least mean square learning rate */
 
-    double LEARNING_RATE;
+    double learning_rate;
 
     /* Weight vector */
 
-    vector<double> WEIGHTS;
+    vector<double> weights;
 
     Model(const int features = 64, const double frequency = 0.25, const int num_frequency = 8,
           const double learning_rate = 0.1);
 
-    static Model *load(const char *path);
+    Model(std::vector<double> weights, const int features = 64, const double frequency = 0.25,
+          const int num_frequency = 8, const double learning_rate = 0.1);
+
+    Model *operator=(Model *base);
+
+    static Model *load(std::string &path);
 
     static int safe(Model *model, const char *path);
-
-    inline void train_iterations(Model *model, const int count);
 
     vector<double> compute_fourier_features(const vector<double> &inputs, double task_selector) const;
 

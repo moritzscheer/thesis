@@ -1,51 +1,37 @@
 
 #include "vehicle.hpp"
-#include <algorithm>
-#include <random>
 
-Vehicle::Vehicle(vector<double> weights)
+Vehicle::Vehicle(int64_t uid, Model *model) : uid()
 {
-    WEIGHTS = weights;
-
-    vehicle_number = vehicle_number_dist(rng);
-    soc_current    = soc_dist(rng);
-    power_current  = 0;
-
-    int64_t tmp = get_timestemp();
-    if (tmp < 0)
-    {
-        return;
-    }
-
-    timestemp = tmp;
 }
 
-bool Vehicle::update_measurements()
+double Vehicle::predict_soc(double time_delta) const
 {
-    timestemp     = get_timestemp();
-    soc_current   = simulate_soc();
-    power_current = simulate_power();
+    std::vector<double> data;
+    data.reserve(4);
 
-    return false;
+    data.emplace_back(soc_current);
+    data.emplace_back(timestemp);
+    data.emplace_back(power_current);
+    data.emplace_back(time_delta);
+
+    return predict(data, 1);
 }
 
-double Vehicle::simulate_soc()
+double Vehicle::predict_time(double next_soc) const
 {
-    double rate = 0.02 * (1.0 - soc_current);
-    std::normal_distribution<double> noise(0.0, 0.001);
+    std::vector<double> data;
+    data.reserve(4);
 
-    double soc_next = soc_current + rate + noise(rng);
-    return std::clamp(soc_next, 0.0, 1.0);
+    data.emplace_back(soc_current);
+    data.emplace_back(timestemp);
+    data.emplace_back(power_current);
+    data.emplace_back(next_soc);
+
+    return predict(data, 0);
 }
 
-double Vehicle::simulate_power()
+int Vehicle::write(Evaluation result)
 {
-    const double P_max = 120.0;
-
-    double power = P_max * (1.0 - soc_current) * (1.0 - 0.3 * soc_current);
-
-    std::normal_distribution<double> noise(0.0, 2.0); // ±2 kW jitter
-    power += noise(rng);
-
-    return std::max(power, 0.0);
+    return 0;
 }

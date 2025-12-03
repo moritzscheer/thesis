@@ -1,51 +1,60 @@
 
 #include "datamodel.hpp"
-#include "model.hpp"
-#include "vehicle.hpp"
-#include <cstdlib>
-#include <unistd.h>
+#include "output.hpp"
 
 int main(int argc, char *argv[])
 {
-    const char *model_path;
-    const char *training_path;
-
-    int opt;
-
-    while ((opt = getopt(argc, argv, "f:n:")) != -1)
+    try
     {
-        switch (opt)
+
+        DataModel DM = DataModel(argc, argv);
+
+        //
+        // Main loop: process new measurements as they arrive
+        //
+        while (Vehicle *vehicle = DM.wait_measurement())
         {
-        case 'f':
-            printf("File: %s\n", optarg);
-            model_path = optarg;
-            break;
-        case 'i':
-            printf("Training data path: %s\n", optarg);
-            training_path = optarg;
-            break;
-        default:
-            fprintf(stderr, "Usage: %s [-m Model] [-t Training]\n", argv[0]);
-            return 1;
+
+            Evaluation eval;
+
+            //
+            // 1. Capture the current measurement
+            //
+
+            eval.soc       = vehicle->soc_current;
+            eval.timestemp = vehicle->timestemp;
+            eval.power     = vehicle->power_current;
+
+            //
+            // 2. Predict SoC at the time of the next measurement
+            //
+
+            double next_time = DM.get_next_prediction_time(vehicle->uid);
+            double duration  = vehicle->timestemp - next_time;
+
+            eval.soc_prediction = vehicle->predict_soc(duration);
+            eval.soc_error_rate = vehicle->error_rate(eval.soc_prediction);
+
+            //
+            // 3. Predict the time required to reach the next SoC milestone
+            //
+
+            double next_soc = DM.get_next_prediction_soc(vehicle->uid);
+
+            eval.time_prediction = vehicle->predict_time(next_soc);
+            eval.time_error_rate = vehicle->error_rate(eval.time_prediction);
+
+            //
+            // 4. Write Evaluation into Vehicle specific file
+            //
+
+            DM.write_evaluation(eval);
         }
+
+        return EXIT_SUCCESS;
     }
-
-    Datamodel datamodel = Datamodel(model_path, training_path);
-
-    while (dm)
+    catch (exception &e)
     {
-        Vehicle &vehicle = ;
-
-        bool done = vehicle.update_measurements();
-
-        if (!done)
-        {
-            vehicles.push_back(vehicle);
-        }
-
-        vehicles.pop_front();
+        return EXIT_FAILURE;
     }
-
-    delete dm;
-    return errno;
 }
